@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import { useSocket } from '../context/SocketProvider'
-import peer from '../services/Peer'
-import { useNavigate } from 'react-router-dom';
-import Videoplayer from './Videoplayer';
-const VideoChat = () => {
-    const navigate = useNavigate()
+import React, { useEffect, useCallback, useState } from "react";
+import Videoplayer from "../component/Videoplayer";
+import peer from "../services/Peer";
+import { useSocket } from "../context/SocketProvider";
+
+const RoomPage = () => {
     const socket = useSocket();
     const [remoteSocketId, setRemoteSocketId] = useState(null);
     const [myStream, setMyStream] = useState();
@@ -109,32 +108,35 @@ const VideoChat = () => {
         handleNegoNeedIncomming,
         handleNegoNeedFinal,
     ]);
-    const HandelgoBack = () => {
-        navigate('/')
-    }
-    return (
-        <div className='text-center'>
-            <h3>Room {remoteSocketId ? 'Connected' : 'no one in room'}</h3>
-            {remoteSocketId && <button onClick={handleCallUser} className='btn btn-success'>Admit</button>}
-            {myStream && <button onClick={sendStreams} className='btn btn-primary'>send Stream</button>}
-            {
-                myStream &&
-                <>
-                    <h3>my stream</h3>
-                    <Videoplayer url={myStream} height={250} width={300} />
-                </>
-            }
-            <hr />
-            {remoteStream &&
-                <>
-                    <h3>Collaborator</h3>
-                    <Videoplayer url={remoteStream} height={250} width={300} />
-                </>
-            }
-            {!remoteSocketId ? <button onClick={HandelgoBack} className='btn btn-danger'>go back</button> : ""}
-            {/* {RemoteSocketId ? <button onClick={handelHangup} className='btn btn-danger text-center' >Hangup</button>:''} */}
-        </div>
-    )
-}
 
-export default VideoChat
+    return (
+        <div>
+            <h1>Room Page</h1>
+            <h4>{remoteSocketId ? "Connected" : "No one in room"}</h4>
+            {myStream && <button onClick={sendStreams} className="btn btn-primary">Send Stream</button>}
+            {remoteSocketId && <button onClick={handleCallUser} btn btn-success>Admit</button>}
+            {myStream && (
+                <>
+                    <h1>My Stream</h1>
+                    <Videoplayer
+                        height="100px"
+                        width="200px"
+                        url={myStream}
+                    />
+                </>
+            )}
+            {remoteStream && (
+                <>
+                    <h1>Remote Stream</h1>
+                    <Videoplayer
+                        height="100px"
+                        width="200px"
+                        url={remoteStream}
+                    />
+                </>
+            )}
+        </div>
+    );
+};
+
+export default RoomPage;

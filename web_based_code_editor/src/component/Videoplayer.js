@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import ReactPlayer from 'react-player'
 
 const Videoplayer = ({ url, height, width }) => {
-  const [ismuted, setIsmuted] = useState(false);
+  const [ismuted, setIsmuted] = useState(true);
   const handelMute = () => {
     if (ismuted === false) {
       setIsmuted(true);
