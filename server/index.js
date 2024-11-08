@@ -2,7 +2,7 @@ const { Server } = require('socket.io')
 const PORT = process.env.PORT || 8000
 const io = new Server(PORT, {
     cors: {
-        origin: "http://pair-programming-b5znht7yl-kartikgupta666s-projects.vercel.app", // Replace with your frontend URL
+        origin: "https://pair-programming-code-editor.vercel.app/", // Replace with your frontend URL
         methods: ["GET", "POST"],
         credentials: true
     }
