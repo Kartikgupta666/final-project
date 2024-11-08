@@ -86,7 +86,7 @@ const VideoChat = () => {
         peer.peer.addEventListener("track", (event) => {
             const [stream] = event.streams;
             console.log("Received remote track!");
-            setRemoteStream(stream);
+            setRemoteStream(stream[0]);
         });
     }, []);
 
