@@ -6,8 +6,8 @@ import { useSocket } from "../context/SocketProvider";
 const VideoChat = () => {
     const socket = useSocket();
     const [remoteSocketId, setRemoteSocketId] = useState(null);
-    const [myStream, setMyStream] = useState();
-    const [remoteStream, setRemoteStream] = useState();
+    const [myStream, setMyStream] = useState(null);
+    const [remoteStream, setRemoteStream] = useState(null);
 
     const handleUserJoined = useCallback(({ email, id }) => {
         console.log(`Email ${email} joined room`);
@@ -19,12 +19,13 @@ const VideoChat = () => {
             audio: true,
             video: true,
         });
+        setMyStream(stream);
+
         const offer = await peer.getOffer();
         socket.emit("user:call", { to: remoteSocketId, offer });
-        setMyStream(stream);
     }, [remoteSocketId, socket]);
 
-    const handleIncommingCall = useCallback(
+    const handleIncomingCall = useCallback(
         async ({ from, offer }) => {
             setRemoteSocketId(from);
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -32,89 +33,96 @@ const VideoChat = () => {
                 video: true,
             });
             setMyStream(stream);
-            console.log(`Incoming Call`, from, offer);
-            const ans = await peer.getAnswer(offer);
-            socket.emit("call:accepted", { to: from, ans });
+            console.log("Incoming Call", from, offer);
+
+            const answer = await peer.getAnswer(offer);
+            socket.emit("call:accepted", { to: from, answer });
         },
         [socket]
     );
 
     const sendStreams = useCallback(() => {
-        for (const track of myStream.getTracks()) {
-            peer.peer.addTrack(track, myStream);
+        if (myStream) {
+            myStream.getTracks().forEach((track) => {
+                peer.peer.addTrack(track, myStream);
+            });
         }
     }, [myStream]);
 
     const handleCallAccepted = useCallback(
-        ({ from, ans }) => {
-            peer.setLocalDescription(ans);
+        ({ from, answer }) => {
+            peer.setLocalDescription(answer);
             console.log("Call Accepted!");
             sendStreams();
         },
         [sendStreams]
     );
 
-    const handleNegoNeeded = useCallback(async () => {
+    const handleNegotiationNeeded = useCallback(async () => {
         const offer = await peer.getOffer();
         socket.emit("peer:nego:needed", { offer, to: remoteSocketId });
     }, [remoteSocketId, socket]);
 
     useEffect(() => {
-        peer.peer.addEventListener("negotiationneeded", handleNegoNeeded);
+        peer.peer.addEventListener("negotiationneeded", handleNegotiationNeeded);
         return () => {
-            peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
+            peer.peer.removeEventListener("negotiationneeded", handleNegotiationNeeded);
         };
-    }, [handleNegoNeeded]);
+    }, [handleNegotiationNeeded]);
 
-    const handleNegoNeedIncomming = useCallback(
+    const handleNegotiationIncoming = useCallback(
         async ({ from, offer }) => {
-            const ans = await peer.getAnswer(offer);
-            socket.emit("peer:nego:done", { to: from, ans });
+            const answer = await peer.getAnswer(offer);
+            socket.emit("peer:nego:done", { to: from, answer });
         },
         [socket]
     );
 
-    const handleNegoNeedFinal = useCallback(async ({ ans }) => {
-        await peer.setLocalDescription(ans);
+    const handleNegotiationFinal = useCallback(async ({ answer }) => {
+        await peer.setLocalDescription(answer);
     }, []);
 
     useEffect(() => {
-        peer.peer.addEventListener("track", async (ev) => {
-            const remoteStream = ev.streams;
-            console.log("GOT TRACKS!!");
-            setRemoteStream(remoteStream[0]);
+        peer.peer.addEventListener("track", (event) => {
+            const [stream] = event.streams;
+            console.log("Received remote track!");
+            setRemoteStream(stream);
         });
     }, []);
 
     useEffect(() => {
         socket.on("user:joined", handleUserJoined);
-        socket.on("incomming:call", handleIncommingCall);
+        socket.on("incoming:call", handleIncomingCall);
         socket.on("call:accepted", handleCallAccepted);
-        socket.on("peer:nego:needed", handleNegoNeedIncomming);
-        socket.on("peer:nego:final", handleNegoNeedFinal);
+        socket.on("peer:nego:needed", handleNegotiationIncoming);
+        socket.on("peer:nego:final", handleNegotiationFinal);
 
         return () => {
             socket.off("user:joined", handleUserJoined);
-            socket.off("incomming:call", handleIncommingCall);
+            socket.off("incoming:call", handleIncomingCall);
             socket.off("call:accepted", handleCallAccepted);
-            socket.off("peer:nego:needed", handleNegoNeedIncomming);
-            socket.off("peer:nego:final", handleNegoNeedFinal);
+            socket.off("peer:nego:needed", handleNegotiationIncoming);
+            socket.off("peer:nego:final", handleNegotiationFinal);
         };
     }, [
         socket,
         handleUserJoined,
-        handleIncommingCall,
+        handleIncomingCall,
         handleCallAccepted,
-        handleNegoNeedIncomming,
-        handleNegoNeedFinal,
+        handleNegotiationIncoming,
+        handleNegotiationFinal,
     ]);
 
     return (
         <div>
             <h1>Room Page</h1>
             <h4>{remoteSocketId ? "Connected" : "No one in room"}</h4>
-            {myStream && <button onClick={sendStreams} className="btn btn-primary">Send Stream</button>}
-            {remoteSocketId && <button onClick={handleCallUser} className="btn btn-success" >Admit</button>}
+            {myStream && (
+                <button onClick={sendStreams} className="btn btn-primary">Send Stream</button>
+            )}
+            {remoteSocketId && (
+                <button onClick={handleCallUser} className="btn btn-success">Admit</button>
+            )}
             {myStream && (
                 <>
                     <h1>My Stream</h1>

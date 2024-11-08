@@ -14,20 +14,24 @@ class PeerService {
         }
     }
 
+    // Set remote description with the received offer and create an answer
     async getAnswer(offer) {
         if (this.peer) {
-            await this.peer.setRemoteDescription(offer);
-            const ans = await this.peer.createAnswer();
-            await this.peer.setLocalDescription(new RTCSessionDescription(ans));
-            return ans;
+            await this.peer.setRemoteDescription(new RTCSessionDescription(offer));
+            const answer = await this.peer.createAnswer();
+            await this.peer.setLocalDescription(new RTCSessionDescription(answer));
+            return answer;
         }
     }
 
-    async setLocalDescription(ans) {
+    // Set the local description with the generated answer
+    async setLocalDescription(desc) {
         if (this.peer) {
-            await this.peer.setRemoteDescription(new RTCSessionDescription(ans));
+            await this.peer.setLocalDescription(new RTCSessionDescription(desc));
         }
     }
+
+    // Generate and return an offer
     async getOffer() {
         if (this.peer) {
             const offer = await this.peer.createOffer();
