@@ -6,7 +6,7 @@ export const useSocket = () => {
     return socket;
 }
 export const SocketProvider = (props) => {
-  const socket = useMemo(() => io("https://pair-programming-code-editor.onrender.com"), []);
+  const socket = useMemo(() => io("https://pair-programming-code-editor.onrender.com/"), []);
   return (
     <SocketContext.Provider value={socket}> 
       {props.children}
