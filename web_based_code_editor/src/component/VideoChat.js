@@ -116,7 +116,7 @@ const VideoChat = () => {
         <div className='text-center'>
             <h3>Room {remoteSocketId ? 'Connected' : 'no one in room'}</h3>
             {remoteSocketId && <button onClick={handleCallUser} className='btn btn-success'>Admit</button>}
-            {/* {myStream && <button onClick={SendStreams}>send Stream</button>} */}
+            {myStream && <button onClick={sendStreams} className='btn btn-primary'>send Stream</button>}
             {
                 myStream &&
                 <>
