@@ -85,7 +85,6 @@ const VideoChat = () => {
             setRemoteStream(remoteStream[0]);
         });
     }, []);
-
     useEffect(() => {
         socket.on("user:joined", handleUserJoined);
         socket.on("incomming:call", handleIncommingCall);
