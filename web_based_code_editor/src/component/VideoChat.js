@@ -101,17 +101,17 @@ const VideoChat = () => {
             {RemoteSocketId && <button onClick={handelAdmitUser} className='btn btn-success'>Admit</button>}
             {/* {mystream && <button onClick={SendStreams}>send Stream</button>} */}
             {
-                // mystream &&
-                // <>
-                // <h3>my stream</h3>
-                // <Videoplayer url={mystream} height={250} width={300}  />
-                // </>
+                mystream &&
+                <>
+                    <h3>my stream</h3>
+                    <Videoplayer url={mystream} height={250} width={300} />
+                </>
             }
             <hr />
             {Remotestream &&
                 <>
                     <h3>Collaborator</h3>
-                    <Videoplayer url={Remotestream} height={250} width={300}  />
+                    <Videoplayer url={Remotestream} height={250} width={300} />
                 </>
             }
             {!RemoteSocketId ? <button onClick={HandelgoBack} className='btn btn-danger'>go back</button> : ""}
