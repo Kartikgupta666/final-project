@@ -1,23 +1,9 @@
 const { Server } = require('socket.io')
-const PORT = process.env.PORT || 8000
-const allowedOrigins = [
-    "https://pair-programming-code-editor.vercel.app",
-    "http://pair-programming-b5znht7yl-kartikgupta666s-projects.vercel.app" // Add any other origins here
-];
 
-const io = new Server(PORT, {
-    cors: {
-        origin: (origin, callback) => {
-            // Allow requests with no origin, like mobile apps or curl requests
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error("Not allowed by CORS"));
-            }
-        },
-        methods: ["GET", "POST"],
-        credentials: true
-    }
+
+
+const io = new Server(8000, {
+    cors: true,
 });
 const emailtosocketidMap = new Map();
 const socketidtoemailMap = new Map();

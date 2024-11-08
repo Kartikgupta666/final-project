@@ -4,6 +4,7 @@ import peer from '../services/Peer'
 import { useNavigate } from 'react-router-dom';
 import Videoplayer from './Videoplayer';
 const VideoChat = () => {
+    const navigate = useNavigate()
     const socket = useSocket();
     const [remoteSocketId, setRemoteSocketId] = useState(null);
     const [myStream, setMyStream] = useState();
@@ -85,6 +86,7 @@ const VideoChat = () => {
             setRemoteStream(remoteStream[0]);
         });
     }, []);
+
     useEffect(() => {
         socket.on("user:joined", handleUserJoined);
         socket.on("incomming:call", handleIncommingCall);
@@ -107,10 +109,9 @@ const VideoChat = () => {
         handleNegoNeedIncomming,
         handleNegoNeedFinal,
     ]);
-    // const handelHangup = () => {
-    //     setRemoteSocketId(null);
-    //     navigate('/')
-    // }
+    const HandelgoBack = () => {
+        navigate('/')
+    }
     return (
         <div className='text-center'>
             <h3>Room {remoteSocketId ? 'Connected' : 'no one in room'}</h3>
