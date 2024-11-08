@@ -3,7 +3,7 @@ import Videoplayer from "../component/Videoplayer";
 import peer from "../services/Peer";
 import { useSocket } from "../context/SocketProvider";
 
-const RoomPage = () => {
+const VideoChat = () => {
     const socket = useSocket();
     const [remoteSocketId, setRemoteSocketId] = useState(null);
     const [myStream, setMyStream] = useState();
@@ -139,4 +139,4 @@ const RoomPage = () => {
     );
 };
 
-export default RoomPage;
+export default VideoChat;
