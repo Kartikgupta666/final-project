@@ -1,104 +1,121 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useSocket } from '../context/SocketProvider'
 import peer from '../services/Peer'
 import { useNavigate } from 'react-router-dom';
 import Videoplayer from './Videoplayer';
 const VideoChat = () => {
-    const navigate = useNavigate();
     const socket = useSocket();
-    const [RemoteSocketId, setRemoteSocketId] = useState(null)
-    const [mystream, setMystream] = useState()
-    const [Remotestream, setRemotestream] = useState()
-    const handelUserJoined = ({ email, id }) => {
-        console.log(`${email} joined the room`)
-        setRemoteSocketId(id)
-    }
-    const handelIncomingcall = async ({ from, offer }) => {
-        console.log(`incoming call `, from, offer)
-        setRemoteSocketId(from);
+    const [remoteSocketId, setRemoteSocketId] = useState(null);
+    const [myStream, setMyStream] = useState();
+    const [remoteStream, setRemoteStream] = useState();
+
+    const handleUserJoined = useCallback(({ email, id }) => {
+        console.log(`Email ${email} joined room`);
+        setRemoteSocketId(id);
+    }, []);
+
+    const handleCallUser = useCallback(async () => {
         const stream = await navigator.mediaDevices.getUserMedia({
             audio: true,
-            video: true
-        });
-        setMystream(stream)
-        const ans = await peer.getAnswer(offer)
-        socket.emit('call:accepted', { to: from, ans })
-    }
-    const SendStreams = () => {
-        for (const track of mystream.getTracks()) {
-            peer.peer.addTrack(track, mystream);
-        }
-    }
-    useEffect(() => {
-        peer.peer.addEventListener('track', async (ev) => {
-            const remoteStream = ev.streams
-            // console.log("got tracks")
-            // console.log(remoteStream[0])
-            setRemotestream(remoteStream[0])
-        })
-    }, [])
-    const handelCallAccepted = ({ from, ans }) => {
-        peer.setRemoteDescription(ans);
-        console.log("call accepted");
-        SendStreams()
-    }
-
-    const handelNegoNeeded = async () => {
-        const offer = await peer.getOffer();
-        socket.emit("peer:nego:needed", { offer, to: RemoteSocketId })
-    }
-    const handelIncomingNego = async ({ from, offer }) => {
-        const ans = await peer.getAnswer(offer);
-        socket.emit("peer:nego:done", { to: from, ans })
-    }
-    const handelnegoFinal = async ({ ans }) => {
-        await peer.setRemoteDescription(ans)
-    }
-
-
-
-    useEffect(() => {
-        peer.peer.addEventListener('negotiationneeded', handelNegoNeeded)
-        return () => {
-            peer.peer.removeEventListener('negotiationneeded', handelNegoNeeded)
-        }
-    }, [RemoteSocketId, socket, handelNegoNeeded])
-
-    const HandelgoBack = () => {
-        navigate("/")
-    }
-
-    useEffect(() => {
-        socket.on("user:joined", handelUserJoined)
-        socket.on("incoming:call", handelIncomingcall)
-        socket.on("call:accepted", handelCallAccepted)
-        socket.on("peer:nego:needed", handelIncomingNego)
-        socket.on("peer:nego:final", handelnegoFinal)
-        return () => {
-            socket.off("user:joined", handelUserJoined)
-            socket.off("incoming:call", handelIncomingcall)
-            socket.off("call:accepted", handelCallAccepted)
-            socket.off("peer:nego:needed", handelIncomingNego)
-            socket.off("peer:nego:final", handelnegoFinal)
-        }
-    }, [socket, handelIncomingcall, handelUserJoined, handelCallAccepted, handelIncomingNego, handelnegoFinal])
-    const handelAdmitUser = async () => {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: true
+            video: true,
         });
         const offer = await peer.getOffer();
-        socket.emit("user:call", { to: RemoteSocketId, offer })
-        setMystream(stream)
-    }
+        socket.emit("user:call", { to: remoteSocketId, offer });
+        setMyStream(stream);
+    }, [remoteSocketId, socket]);
+
+    const handleIncommingCall = useCallback(
+        async ({ from, offer }) => {
+            setRemoteSocketId(from);
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: true,
+            });
+            setMyStream(stream);
+            console.log(`Incoming Call`, from, offer);
+            const ans = await peer.getAnswer(offer);
+            socket.emit("call:accepted", { to: from, ans });
+        },
+        [socket]
+    );
+
+    const sendStreams = useCallback(() => {
+        for (const track of myStream.getTracks()) {
+            peer.peer.addTrack(track, myStream);
+        }
+    }, [myStream]);
+
+    const handleCallAccepted = useCallback(
+        ({ from, ans }) => {
+            peer.setLocalDescription(ans);
+            console.log("Call Accepted!");
+            sendStreams();
+        },
+        [sendStreams]
+    );
+
+    const handleNegoNeeded = useCallback(async () => {
+        const offer = await peer.getOffer();
+        socket.emit("peer:nego:needed", { offer, to: remoteSocketId });
+    }, [remoteSocketId, socket]);
+
+    useEffect(() => {
+        peer.peer.addEventListener("negotiationneeded", handleNegoNeeded);
+        return () => {
+            peer.peer.removeEventListener("negotiationneeded", handleNegoNeeded);
+        };
+    }, [handleNegoNeeded]);
+
+    const handleNegoNeedIncomming = useCallback(
+        async ({ from, offer }) => {
+            const ans = await peer.getAnswer(offer);
+            socket.emit("peer:nego:done", { to: from, ans });
+        },
+        [socket]
+    );
+
+    const handleNegoNeedFinal = useCallback(async ({ ans }) => {
+        await peer.setLocalDescription(ans);
+    }, []);
+
+    useEffect(() => {
+        peer.peer.addEventListener("track", async (ev) => {
+            const remoteStream = ev.streams;
+            console.log("GOT TRACKS!!");
+            setRemoteStream(remoteStream[0]);
+        });
+    }, []);
+
+    useEffect(() => {
+        socket.on("user:joined", handleUserJoined);
+        socket.on("incomming:call", handleIncommingCall);
+        socket.on("call:accepted", handleCallAccepted);
+        socket.on("peer:nego:needed", handleNegoNeedIncomming);
+        socket.on("peer:nego:final", handleNegoNeedFinal);
+
+        return () => {
+            socket.off("user:joined", handleUserJoined);
+            socket.off("incomming:call", handleIncommingCall);
+            socket.off("call:accepted", handleCallAccepted);
+            socket.off("peer:nego:needed", handleNegoNeedIncomming);
+            socket.off("peer:nego:final", handleNegoNeedFinal);
+        };
+    }, [
+        socket,
+        handleUserJoined,
+        handleIncommingCall,
+        handleCallAccepted,
+        handleNegoNeedIncomming,
+        handleNegoNeedFinal,
+    ]);
     // const handelHangup = () => {
     //     setRemoteSocketId(null);
     //     navigate('/')
     // }
     return (
         <div className='text-center'>
-            <h3>Room {RemoteSocketId ? 'Connected' : 'no one in room'}</h3>
-            {RemoteSocketId && <button onClick={handelAdmitUser} className='btn btn-success'>Admit</button>}
+            <h3>Room {remoteSocketId ? 'Connected' : 'no one in room'}</h3>
+            {remoteSocketId && <button onClick={handleCallUser} className='btn btn-success'>Admit</button>}
             {/* {mystream && <button onClick={SendStreams}>send Stream</button>} */}
             {
                 mystream &&
@@ -108,13 +125,13 @@ const VideoChat = () => {
                 </>
             }
             <hr />
-            {Remotestream &&
+            {remoteStream &&
                 <>
                     <h3>Collaborator</h3>
-                    <Videoplayer url={Remotestream} height={250} width={300} />
+                    <Videoplayer url={remoteStream} height={250} width={300} />
                 </>
             }
-            {!RemoteSocketId ? <button onClick={HandelgoBack} className='btn btn-danger'>go back</button> : ""}
+            {!remoteSocketId ? <button onClick={HandelgoBack} className='btn btn-danger'>go back</button> : ""}
             {/* {RemoteSocketId ? <button onClick={handelHangup} className='btn btn-danger text-center' >Hangup</button>:''} */}
         </div>
     )
